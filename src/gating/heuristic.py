@@ -1,16 +1,10 @@
-"""Heuristic gate: always rewrite if the query contains a pronoun or is short.
+"""Simple pre-retrieval heuristic baseline."""
 
-Status: STUB — implement after feature extraction is working.
 
-Owner: Person B
-
-This gate uses cheap, human-readable rules as a baseline for the
-learned gate. It must NOT use retrieval results (pre-retrieval only).
-"""
-
-from __future__ import annotations
-
-# TODO (Person B): implement after features.py is complete.
-raise NotImplementedError(
-    "src/gating/heuristic.py is not yet implemented."
-)
+def should_rewrite(features, short_query_threshold=5):
+    """Rewrite if the question is short or context-dependent."""
+    return bool(
+        features["has_pronoun"]
+        or features["has_ellipsis"]
+        or features["query_length"] <= short_query_threshold
+    )

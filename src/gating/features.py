@@ -1,24 +1,44 @@
-"""Pre-retrieval feature extraction for the gating model.
+"""Pre-retrieval feature extraction for query gating."""
 
-Status: STUB — implement after KEEP/CONCAT results are available.
+import re
 
-Owner: Person B
+PRONOUNS = {
+    "he", "she", "it", "they", "them", "his", "her",
+    "their", "this", "that", "these", "those", "there",
+    "him", "its", "who", "which"
+}
 
-Planned features (all pre-retrieval — no retrieval results used here)
------------------------------------------------------------------------
-- query_length          : number of tokens in the current question
-- has_pronoun           : binary; detects 'he', 'she', 'it', 'they', 'that', etc.
-- has_ellipsis          : binary; detect ellipsis patterns (e.g. "and what about...")
-- turn_position         : turn_id (later turns may be more coreference-heavy)
-- lexical_overlap       : Jaccard similarity between query tokens and history tokens
+ELLIPSIS_PHRASES = {
+    "what about", "and what", "how about", "tell me more",
+    "what else", "and the", "what happened next"
+}
 
-[UNRESOLVED] finalise the feature set after reviewing the distribution
-of help/tie/hurt outcomes.
-"""
 
-from __future__ import annotations
+def tokenize(text):
+    return set(re.findall(r"\b\w+\b", text.lower()))
 
-# TODO (Person B): implement after outcomes are available.
-raise NotImplementedError(
-    "src/gating/features.py is not yet implemented."
-)
+
+def extract_features(question, history, turn_number):
+    """Extract inexpensive features available before rewriting."""
+    question = question or ""
+    history = history or []
+
+    tokens = tokenize(question)
+    history_tokens = tokenize(" ".join(history))
+
+    overlap = (
+        len(tokens & history_tokens) / len(tokens | history_tokens)
+        if tokens | history_tokens else 0.0
+    )
+
+    lower_question = question.lower()
+
+    return {
+        "query_length": len(question.split()),
+        "has_pronoun": int(bool(tokens & PRONOUNS)),
+        "has_ellipsis": int(
+            any(phrase in lower_question for phrase in ELLIPSIS_PHRASES)
+        ),
+        "turn_position": int(turn_number),
+        "lexical_overlap": overlap,
+    }

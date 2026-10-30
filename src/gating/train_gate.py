@@ -1,23 +1,77 @@
-"""Lightweight learned gate training and inference.
+"""Lightweight logistic-regression gate."""
 
-Status: STUB — implement after features and outcomes are available
-on the training split.
+import numpy as np
 
-Owner: Person B
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 
-Plan
-----
-- Candidate models: logistic regression, gradient boosting (scikit-learn).
-- Features from src/gating/features.py.
-- Labels from src/evaluation/outcomes.py (HELPFUL=1, else=0).
-- Train/val/test split at conversation level (NOT turn level).
-- Tune threshold on validation set; report on test set only.
-- Do NOT touch the test set during tuning.
-"""
 
-from __future__ import annotations
+FEATURE_NAMES = [
+    "query_length",
+    "has_pronoun",
+    "has_ellipsis",
+    "turn_position",
+    "lexical_overlap",
+]
 
-# TODO (Person B): implement after features.py and outcomes are ready.
-raise NotImplementedError(
-    "src/gating/train_gate.py is not yet implemented."
-)
+
+def train_model(X_train, y_train, seed=42):
+    """Train a balanced logistic-regression classifier."""
+    if len(set(y_train)) < 2:
+        raise ValueError(
+            "Training split contains only one class. "
+            "A binary classifier cannot be trained."
+        )
+
+    model = Pipeline([
+        ("scaler", StandardScaler()),
+        ("classifier", LogisticRegression(
+            class_weight="balanced",
+            max_iter=2000,
+            random_state=seed
+        ))
+    ])
+
+    model.fit(X_train, y_train)
+    return model
+
+
+def select_threshold(probabilities, keep_scores, rewrite_scores):
+    """Choose threshold maximizing validation retrieval quality.
+
+    Ties are broken in favour of the lower rewrite rate.
+    """
+    probabilities = np.asarray(probabilities)
+
+    candidates = sorted(set(
+        [0.0, 1.0000001] + probabilities.tolist()
+    ))
+
+    best_threshold = None
+    best_score = float("-inf")
+    best_rate = float("inf")
+
+    for threshold in candidates:
+        decisions = probabilities >= threshold
+
+        scores = [
+            rewrite_scores[i] if decisions[i] else keep_scores[i]
+            for i in range(len(decisions))
+        ]
+
+        mean_score = float(np.mean(scores))
+        rewrite_rate = float(np.mean(decisions))
+
+        if (
+            mean_score > best_score + 1e-12
+            or (
+                abs(mean_score - best_score) <= 1e-12
+                and rewrite_rate < best_rate
+            )
+        ):
+            best_score = mean_score
+            best_rate = rewrite_rate
+            best_threshold = float(threshold)
+
+    return best_threshold, best_score, best_rate

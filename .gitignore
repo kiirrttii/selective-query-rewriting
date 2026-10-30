@@ -24,6 +24,12 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+# API/cache files
+.rewrite_cache/
+
+# Generated experiment outputs
+outputs/results/
+
 # C extensions
 *.so
 

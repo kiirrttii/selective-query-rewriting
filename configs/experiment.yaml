@@ -38,7 +38,7 @@ formulations:
 # ── Retrieval (BM25) ──────────────────────────────────────────────────────────
 retrieval:
   method: "bm25"
-  index_dir: "data/index/bm25_qrecc"
+  index_dir: "data/index/bm25_fts5_dedup_full.sqlite"
   top_k: 100            # retrieve top-100 for Recall@100; re-rank for @10
 
 # ── Evaluation ────────────────────────────────────────────────────────────────

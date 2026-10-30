@@ -1,16 +1,19 @@
-"""Random gate: rewrite a query with probability p, independently.
+"""Random gate matched to another gate's rewrite rate."""
 
-This baseline is matched to the learned gate's rewrite rate so that
-the comparison is fair (same fraction of queries rewritten, but random
-rather than learned selection).
+import numpy as np
 
-Status: STUB — implement after the learned gate's rewrite rate is known.
-Owner: Person B
-"""
 
-from __future__ import annotations
+def select_random(rewrite_count, total_count, seed=42):
+    """Select exactly rewrite_count indices without replacement."""
+    if not 0 <= rewrite_count <= total_count:
+        raise ValueError("Invalid rewrite_count.")
 
-# TODO (Person B): implement with numpy.random; read seed from config.
-raise NotImplementedError(
-    "src/gating/random_gate.py is not yet implemented."
-)
+    rng = np.random.default_rng(seed)
+
+    selected = rng.choice(
+        total_count,
+        size=rewrite_count,
+        replace=False
+    )
+
+    return set(selected.tolist())
